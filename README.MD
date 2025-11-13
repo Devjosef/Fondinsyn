@@ -1,4 +1,4 @@
-### ETL Pipeline for Swedish index funds NAV calculation.
+### ETL pipeline automates the daily extraction, transformation, and loading of holdings data from multiple Swedish index funds.
 
 **Project Overview**
 This project automates the daily of extraction,transformation and loading of holdings data from a small subset of Swedish index funds. It Focuses on consolidating portfolio holdings by sector and market capitalization to provide investors and analysts with actionable insights into fund compositions.

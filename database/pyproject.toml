@@ -1,0 +1,29 @@
+[build-system]
+requires = ["setuptools>=65", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "portfolio-etl"
+version = "0.1.0"
+description = "ETL pipeline for Swedish index fund holdings and performance data"
+authors = [{name = "Devjosef", email = "devjosef1@gmail.com"}]
+license = {text = "MIT"}
+requires-python = ">=3.9"
+dependencies = [
+    "sqlalchemy>=2.0",
+    "psycopg2-binary>=2.9",
+    "alembic>=1.13",
+]
+
+[project.optional-dependencies]
+dev = [
+    "pytest",
+    "black",
+    "ruff",
+    "mypy",
+    "pre-commit"
+]
+postgres = ["psycopg2-binary"]
+
+[tool.setuptools.packages.find]
+where = ["src"]

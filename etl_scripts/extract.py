@@ -1,10 +1,13 @@
 import requests
 import logging
 from typing import List, Dict, Any
+import os
+
+API_KEY = os.getenv("API_KEY")
 
 # this is set as an example: Will be replaced shortly
 FUND_API_ENDPOINTS = {
-    "fund_1": "https://api.swedishfund1.se/holdings",
+    "fund_1": "https://finnhub.io/api/v1/mutual-fund/holdings?symbol=",
     "fund_2": "https://api.swedishfund2.se/holdings",
 }
 

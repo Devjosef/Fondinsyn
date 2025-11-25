@@ -1,0 +1,13 @@
+import os
+
+from dotenv import find_dotenv, load_dotenv
+
+# Find .env
+dotenv_path = find_dotenv()
+
+# Load up.
+load_dotenv(dotenv_path)
+
+API_KEY = os.getenv("API_KEY")
+
+print(f"Loaded API_KEY: {API_KEY}")

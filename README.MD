@@ -1,24 +1,24 @@
-### ETL pipeline automates the daily extraction, transformation, and loading of holdings data from multiple Swedish index funds.
+### ETL pipeline automates the quarterly extraction, transformation, and loading of holdings data from multiple Swedish index funds.
 
 **Project Overview**
-This project automates the daily of extraction,transformation and loading of holdings data from a small subset of Swedish index funds. It Focuses on consolidating portfolio holdings by sector and market capitalization to provide investors and analysts with actionable insights into fund compositions.
+This project automates the quarterly extraction, transformation, and loading of holdings data from a small subset of Swedish index funds. It focuses on consolidating portfolio holdings by sector and market capitalization to give investors and analysts useful insights into what funds hold.
 
 **Purpose**
-To streamline aggregation of holdings data from multiple funds, transforming raw asset information into standardized sector and market cap groupings. This enables comparison,trend, analysis, risk assesment, and more informed investment desicions.
+To simplify gathering holdings info from different funds, changing raw asset data into grouped sectors and market caps. This makes it easier to compare, spot trends, analyze risks, and make smarter investment choices.
 
 
 **ETL Pipeline**
-• Extract: Automatically collect holdings data (stocks, weights) from various Swedish index funds on a daily basis.
-• Transform: Clean and consolidate holdings by grouping assets according to sector, market capitalization, or other relevant classifications.
-• Load: Store the transformed consolidated holdings into a database or dashboard environment for easy visualization, reporting, or further analysis.
+• Extract: Automatically grabs holdings data (stocks, weights) from Swedish index funds every quarter using Finansinspektionen's zipped XML files.
+• Transform: Cleans the data and group holdings by sector, market cap, or other useful categories.
+• Load: Put the cleaned and grouped data into a database or dashboard so it’s easy to see, report on, and analyze.
 
 ### Usage
-1. Run the extraction script to fetch the latest holdings data from fund providers or APIs.
+1. Run the extraction script to download the latest quarterly holdings files from Finansinspektionen.
 
-2. Execute transformation steps to group and summarize holdings by sector and market cap. 
+2. Run the transformation steps to group holdings by sector and market cap.
 
-3. Load the resulting structured data into a dashboard or database for visualization and comparison.
+3. Load the results into a dashboard or database for easy comparison and visualization.
 
 **Expected Conclusion**
-Investors, analysts and portfolio managers gain a timely, holisitic view of index fund compositions, allowing easier comparison across funds and better understanding of sector or market risk exposures. The solution reduces manual data handling and provides up to date standardized insights to support decision making.
+Investors, analysts, and portfolio managers get an up-to-date, clear view of how Swedish index funds are composed each quarter. This makes comparing funds simpler and helps understand sector or market risks better. The setup cuts down on manual work and gives timely, standardized insights to back investment decisions.
 

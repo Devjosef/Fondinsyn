@@ -1,6 +1,6 @@
 pandas==2.2.3
 requests==2.32.3
-SQLAlchemy==2.0.15
+SQLAlchemy>=1.4.24,<2.0
 apache-airflow==2.7.1
 psycopg2-binary==2.9.6
 python-dateutil==2.9.0

@@ -5,7 +5,7 @@ FROM control.etl_log
 -- Insert a new ETL log
 INSERT INTO control.etl_log (run_date, status, message)
 VALUES (:run_date, :status, :message)
-RETURNING :id;
+RETURNING id;
 
 -- Update ETL log by id
 UPDATE control.etl_log

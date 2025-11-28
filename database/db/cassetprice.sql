@@ -1,6 +1,6 @@
 -- Retrieve all asset prices
 SELECT id, asset_id, price, date
-FROM raw.asset_price
+FROM raw.asset_price;
 
 
 -- Retreive price history for a specific asset and date range, 

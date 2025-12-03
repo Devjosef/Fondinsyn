@@ -5,4 +5,5 @@ apache-airflow==2.7.1
 psycopg2-binary==2.9.6
 python-dateutil==2.9.0
 pytz==2025.2
+tenacity==9.0.0
 

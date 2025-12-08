@@ -1,53 +1,80 @@
-import requests
 import logging
-from typing import List, Dict, Any
+from typing import Iterator
 import os
+import pandas as pd
+import glob
+from lxml import etree
+from pathlib import Path
 
-API_KEY = os.getenv("API_KEY")
+logger = logging.getLogger(__name__)
 
-# this is set as an example: Will be replaced shortly
-FUND_API_ENDPOINTS = {
-    "fund_1": "https://finnhub.io/api/v1/mutual-fund/holdings?symbol=",
-    "fund_2": "https://api.swedishfund2.se/holdings",
-}
+# Data had to be chunked to prevent memory crashes or freezes
+FI_DATA_PATH = os.getenv("FI_DATA_PATH", "xml_files")
+OUTPUT_CSV = "swedish_funds_complete.csv"
+CHUNKSIZE = 100_000
 
-def fetch_holdings_from_api(url: str, timeout: int = 10) -> List[Dict[str, Any]]:
-    """Fetch holdings JSON data from a given API endpoint """
+def parse_fi_holdings(xml_file: str) -> pd.DataFrame:
+    holdings = []
     try:
-        response = requests.get(url, timeout=timeout)
-        response.raise_for_status()
-        data = response.json()
-
-        if isinstance(data, list):
-            return data
-        elif isinstance(data,dict) and 'holdings' in data:
-            return data['holdings']
-        else:
-            logging.warning(f"Unexpected JSON structure from {url}, returning empty list")
-            return []
-    except requests.RequestException as e:
-        logging.error(f"Error fetching holdings data from {url}: {e}")
-        return []
-    except ValueError as e:
-        logging.error(f"Invalid JSON received from {url}: {e}")
-        return []
+        tree = etree.parse(xml_file)
+        root = tree.getroot()
+        ns = {'fi': 'http://schemas.fi.se/publika/vardepappersfonder/20200331'}
+        
+        fund_name = root.xpath('.//fi:Fond_namn/text()', namespaces=ns)
+        fund_isin = root.xpath('.//fi:Fond_ISIN-kod/text()', namespaces=ns)
+        quarter_end = root.xpath('.//fi:Kvartalsslut/text()', namespaces=ns)
+        
+        if not fund_name:
+            return pd.DataFrame()
+        # Defined safe traversal of the xml tree
+        def safe_xpath(element, xpath_expr):
+            res = element.xpath(xpath_expr, namespaces=ns)
+            return res[0] if res else ''
+        
+        for inst in root.xpath('.//fi:FinansielltInstrument', namespaces=ns):
+            holdings.append({
+                'quarter': Path(xml_file).parent.parent.name,
+                'fund_name': fund_name[0],
+                'fund_isin': fund_isin[0] if fund_isin else '',
+                'quarter_end': quarter_end[0] if quarter_end else '',
+                'isin': safe_xpath(inst, 'fi:ISIN-kod_instrument/text()'),
+                'name': safe_xpath(inst, 'fi:Instrumentnamn/text()'),
+                'country': safe_xpath(inst, 'fi:Landkod_Emittent/text()'),
+                'currency': safe_xpath(inst, 'fi:Valuta/text()'),
+                'shares': float(safe_xpath(inst, 'fi:Antal/text()') or 0),
+                'market_value_sek': float(safe_xpath(inst, 'fi:Marknadsvärde_instrument/text()') or 0),
+                'weight_pct': float(safe_xpath(inst, 'fi:Andel_av_fondförmögenhet_instrument/text()') or 0)
+            })
+    except Exception as e:
+        logger.error(f"Error parsing {xml_file}: {e}")
+        return pd.DataFrame()
     
+    return pd.DataFrame(holdings)
 
-def extract_holdings() -> List[Dict[str, Any]]:
-    all_holdings: List[Dict[str, Any]] = []
-    for fund_id, api_url in FUND_API_ENDPOINTS.items():
-        logging.info(f"Fetching holdings for {fund_id} from {api_url}")
-        holdings = fetch_holdings_from_api(api_url)
-        for holding in holdings:
-            holding['fund_id'] = fund_id
-        all_holdings.extend(holdings)
+def extract_holdings() -> Iterator[pd.DataFrame]:
+    xml_files = glob.glob(f"{FI_DATA_PATH}/**/*.xml", recursive=True)
+    logger.info(f"Found {len(xml_files)} FI XML files")
     
-    logging.info(f"Successfully extracted total {len(all_holdings)} holdings across {len(FUND_API_ENDPOINTS)} funds.")
-    return all_holdings
-
+    all_dfs = []
+    for xml_file in xml_files:
+        df = parse_fi_holdings(xml_file)
+        if not df.empty:
+            all_dfs.append(df)
+    
+    if all_dfs:
+        full_df = pd.concat(all_dfs, ignore_index=True)
+        full_df.to_csv(OUTPUT_CSV, index=False)
+        logger.info(f"Saved {len(full_df):,} holdings to {OUTPUT_CSV}")
+        
+        for i in range(0, len(full_df), CHUNKSIZE):
+            yield full_df.iloc[i:i+CHUNKSIZE]
+    else:
+        logger.warning("No holdings extracted")
 
 if __name__ == "__main__":
-    holdings = extract_holdings()
-    print(f"Total holdings extracted: {len(holdings)}")
-    if holdings:
-        print("Sample holding:", holdings[0])
+    chunks = list(extract_holdings())
+    total_rows = sum(len(chunk) for chunk in chunks)
+    print(f"Extracted {total_rows:,} holdings in {len(chunks)} chunks")
+
+
+extract_data = extract_holdings

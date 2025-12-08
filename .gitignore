@@ -7,3 +7,15 @@
 
 # .Env
 .env
+
+# Data files (1.35GB+)
+*.csv
+swedish_funds_complete.csv
+top_*.csv
+country_exposure.csv
+*.xlsx
+
+# Raw XML data (93MB)
+**/*.xml
+Fondinnehav_*/
+data/

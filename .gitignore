@@ -19,3 +19,7 @@ country_exposure.csv
 **/*.xml
 Fondinnehav_*/
 data/
+
+# Raw logs
+etl_project.log
+etl_full_run.log

@@ -2,19 +2,18 @@ import logging.config
 import yaml
 import sys
 
-# Config logging even for main.py
 logger = logging.getLogger(__name__)
 
-def setup_logging(default_path='config.yaml', default_level=logging.INFO):
-    """ Load logging config from YAML and apply """
+def setup_logging(default_path='config/config.yaml', default_level=logging.INFO):
+    """Load logging configuration from YAML."""
     try:
         with open(default_path, 'r') as f:
             config = yaml.safe_load(f.read())
             logging_config = {
                 'version': 1,
                 'formatters': {
-                    'default':{
-                        'format': '%(asctime)s [%(levelname)s] %(name)s: %(message)s',
+                    'default': {
+                        'format': '%(asctime)s [%(levelname)s] %(message)s',
                     },
                 },
                 'handlers': {
@@ -43,23 +42,46 @@ def setup_logging(default_path='config.yaml', default_level=logging.INFO):
         logging.basicConfig(level=default_level)
 
 def main():
-    setup_logging()
-    logger = logging.getLogger(__name__)
-    logger.info("ETL pipeline starting")
+    print("=== ETL START ===")
+    sys.stdout.flush()
 
-    # Imports for ETL modules.
+    setup_logging()
+    config = yaml.safe_load(open('config/config.yaml'))
+
+    logger.info("Importing ETL modules...")
     from etl_scripts.extract import extract_data
     from etl_scripts.transform import transform_data
     from etl_scripts.load import load_data
+    from etl_scripts.load_assets import load_assets_from_csv
+    from etl_scripts.load_holdings import load_holdings_from_csv
 
-    # Expected / Example of run flow:
     try:
-        data = extract_data()
-        transformed = transform_data(data)
-        load_data(transformed)
-        logger.info("ETL pipeline completed successfully")
-    except Exception as e:
-        logger.error("ETL pipeline failed", exc_info=True)
+        logger.info("Extracting data...")
+        total_extracted = 0
+        transformed_chunks = []
+
+        for i, chunk in enumerate(extract_data(), start=1):
+            total_extracted += len(chunk)
+            logger.info(f"Chunk {i}: {len(chunk)} rows extracted.")
+            for transformed in transform_data(chunk):
+                transformed_chunks.append(transformed)
+
+        logger.info(f"Extracted {total_extracted} rows total.")
+
+        logger.info("Loading sector allocations...")
+        load_data(transformed_chunks)
+
+        assets_loaded = load_assets_from_csv('swedish_funds_complete.csv', config)
+        logger.info(f"{assets_loaded} assets loaded.")
+
+        holdings_loaded = load_holdings_from_csv('swedish_funds_complete.csv', config)
+        logger.info(f"{holdings_loaded} holdings loaded.")
+
+        logger.info("ETL completed successfully.")
+    except Exception:
+        logger.exception("ETL failed.")
+
+    print("=== ETL END ===")
 
 if __name__ == "__main__":
     main()

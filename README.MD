@@ -19,6 +19,19 @@ To simplify gathering holdings info from different funds, changing raw asset dat
 
 3. Load the results into a dashboard or database for easy comparison and visualization.
 
+### Tech Stack
+
+Python (ETL scripts and data manipulation)
+
+Pandas & PyYAML (data handling/config)
+
+PostgreSQL / SQLite (data storage)
+
+Docker (deployment and database environment)
+
 **Expected Conclusion**
-Investors, analysts, and portfolio managers get an up-to-date, clear view of how Swedish index funds are composed each quarter. This makes comparing funds simpler and helps understand sector or market risks better. The setup cuts down on manual work and gives timely, standardized insights to back investment decisions.
+Investors, analysts, and portfolio managers get an up-to-date, clear view of how Swedish index funds are composed each quarter. This makes comparing funds easier by aiding understanding of sector & market risks better. The setup cuts down on manual work and gives timely, standardized insights to back investment decisions. 
+
+**Final Conclusion**
+The ETL pipeline successfully extracted 1.35M holdings from 8,976 XML files across 892 Swedish index funds, transformed them into 59,312 fund × sector × quarter allocations, and loaded them into PostgreSQL. The database now contains 28,437 unique securities categorized into 7 sectors. Work is still left to be done: we need to get it to Tableau or Power BI, and optionally automated validation of the extracted data using a CI.
 

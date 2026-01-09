@@ -1,7 +1,6 @@
 from lxml import etree
 import glob
 
-# Find the first XML file
 xml_files = glob.glob('**/*.xml', recursive=True)
 if not xml_files:
     print("No XML files found.")
@@ -10,7 +9,7 @@ if not xml_files:
 test_file = xml_files[0]
 print(f"Testing: {test_file}")
 
-# Parse the XML using the etree library
+# Parse using the etree library
 tree = etree.parse(test_file)
 root = tree.getroot()
 
@@ -20,7 +19,7 @@ print("Root tag:", root.tag)
 print("\nUnique tags:", sorted(set(elem.tag for elem in root.iter())))
 
 
-# Test the namespace (update if needed from nsmap above this code)
+# Test the namespace (update if needed from nsmap above this code, if it differs)
 ns = {'fi': 'http://schemas.fi.se/publika/vardepappersfonder/20200331'}
 
 print("\nXPath tests:")

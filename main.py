@@ -77,6 +77,8 @@ def main():
         holdings_loaded = load_holdings_from_csv('swedish_funds_complete.csv', config)
         logger.info(f"{holdings_loaded} holdings loaded.")
 
+        logger.info("Exporting CSVs from database...")
+
         logger.info("ETL completed successfully.")
     except Exception:
         logger.exception("ETL failed.")

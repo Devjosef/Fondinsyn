@@ -23,6 +23,7 @@ Fondinnehav_*/
 
 # Logs & Diagnostics
 *.log
+*.log
 logs/
 logs/*
 

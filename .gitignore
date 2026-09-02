@@ -1,25 +1,32 @@
-# Virutal environment
-/venv
-
-#Further additions
-/config
-
-
-# .Env
+# Environment & Configuration
 .env
+/config/
+/venv/
+.venv/
+__pycache__/
+*.pyc
 
-# Data files (1.35GB+)
+# Data Files & Datasets (1.35GB+)
 *.csv
+*.xlsx
+/data/
+
+# Specific Data Directories & Patterns
 swedish_funds_complete.csv
 top_*.csv
 country_exposure.csv
-*.xlsx
-
-# Raw XML data (93MB)
-**/*.xml
 Fondinnehav_*/
-data/
 
-# Raw logs
-etl_project.log
-etl_full_run.log
+# Raw XML Data
+*.xml
+**/*.xml
+
+# Logs & Diagnostics
+*.log
+logs/
+logs/*
+
+# System & IDE Files
+.DS_Store
+.vscode/
+.idea/

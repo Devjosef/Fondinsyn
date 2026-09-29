@@ -1,6 +1,6 @@
 # Clarification of load.py Files
 
-Three separate loaders exist due to dataset size and performance requirements. The data is sourced from Q1 2022 to Q2 2025 this totals about 1.35M records. A single unified loader would bottleneck the entire pipeline, resulting in a 4+ hour completion time.
+Three separate loaders exist due to dataset size and performance requirements. The data is sourced from Q1 2022 to Q3 2026 this totals about 1.35M records. A single unified loader would bottleneck the entire pipeline, resulting in a 4+ hour completion time.
 
 Each loader is optimized for its dataset's specific scale, no unnecessary abstraction or complexity. The tradeoff: ORM safety vs raw speed per data source.
 

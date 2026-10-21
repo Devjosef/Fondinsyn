@@ -5,6 +5,8 @@ import pandas as pd
 import glob
 from lxml import etree
 from pathlib import Path
+from dotenv import load_dotenv
+load_dotenv()
 
 logger = logging.getLogger(__name__)
 

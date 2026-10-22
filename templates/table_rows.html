@@ -1,0 +1,16 @@
+{% for h in holdings %}
+<tr class="hover:bg-slate-800/30 transition-colors">
+    <td class="py-3 px-4 font-mono text-xs text-slate-300">{{ h.isin }}</td>
+    <td class="py-3 px-4 text-slate-200">{{ h.fund_name }}</td>
+    <td class="py-3 px-4 text-slate-200 font-medium">{{ h.security_name }}</td>
+    <td class="py-3 px-4 font-mono text-xs text-right text-slate-200">
+        {{ "{:,.0f}".format(h.market_value_sek) }}
+    </td>
+    <td class="py-3 px-4 font-mono text-xs text-right text-slate-300">
+        {{ "%.2f"|format(h.portfolio_weight) }}%
+    </td>
+    <td class="py-3 px-4 font-mono text-xs text-right {% if h.qoq_delta > 0 %}text-emerald-400{% elif h.qoq_delta < 0 %}text-rose-400{% else %}text-slate-400{% endif %}">
+        {{ "%+.2f"|format(h.qoq_delta) }}%
+    </td>
+</tr>
+{% endfor %}

@@ -128,7 +128,6 @@ def check_database_connectivity(config: dict) -> bool:
 
 
 def invalidate_superset_cache() -> None:
-    """Non-fatal: a stale dashboard cache must never fail the pipeline."""
     try:
         orchestrator = DockerOrchestrator()
         if orchestrator.initialize():
@@ -195,8 +194,6 @@ def phase_fetch(config: dict, metrics: PipelineMetrics) -> bool:
             f"failed: {stats['failed']}, skipped: {stats['skipped']}",
         )
 
-        # Per-quarter failures are returned in stats, not raised, so they must
-        # be recorded as a phase failure here or the run would still exit 0.
         if stats['failed']:
             metrics.record_phase_failure(
                 'FETCH', f"{stats['failed']} quarter(s) failed", '', metrics=stats
@@ -221,9 +218,6 @@ def phase_extract_transform(config: dict, metrics: PipelineMetrics) -> bool:
         xml_root = Path(os.getenv('FI_DATA_PATH', 'data/raw'))
         xml_mtime = newest_xml_mtime(xml_root)
 
-        # Extracted XML from past runs stays on disk, so "XML exists" cannot
-        # mean "new data". Reprocess only when the export is missing or older
-        # than the newest XML.
         try:
             csv_path: Optional[Path] = resolve_holdings_csv()
         except FileNotFoundError:
@@ -249,8 +243,6 @@ def phase_extract_transform(config: dict, metrics: PipelineMetrics) -> bool:
             for transformed_chunk in transform_data(chunk):
                 total_transformed += len(transformed_chunk)
 
-        # LOAD reads the CSV, not the transformed chunks above, so
-        # transform_data must write that file as a side effect.
         try:
             if resolve_holdings_csv().stat().st_mtime < xml_mtime:
                 logger.warning(
@@ -282,7 +274,6 @@ def phase_load(config: dict, metrics: PipelineMetrics) -> bool:
     try:
         csv_path = str(resolve_holdings_csv())
 
-        # Assets first: holdings reference them by foreign key.
         assets_loaded = load_assets_from_csv(csv_path, config)
         holdings_loaded = load_holdings_from_csv(csv_path, config)
         logger.info(f"Loaded {assets_loaded} assets, {holdings_loaded} holdings")
@@ -335,8 +326,6 @@ def phase_refresh_analytics(config: dict, metrics: PipelineMetrics) -> bool:
         stats = {'views_refreshed': views_refreshed, 'views_total': len(views)}
         log_pipeline_run(config, 'REFRESH_ANALYTICS', 'OK', f"Refreshed {views_refreshed}/{len(views)} views")
 
-        # Must run after the views are refreshed, otherwise dashboards
-        # re-cache the old data.
         if views_refreshed:
             invalidate_superset_cache()
 
@@ -379,7 +368,6 @@ def run_pipeline(config: dict) -> int:
 
     metrics = PipelineMetrics()
 
-    # (name, function, blocking)
     phases = [
         ('PRE_CHECK', phase_pre_check, True),
         ('DOCKER_VERIFY', phase_docker_verify, True),

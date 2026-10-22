@@ -1,37 +1,107 @@
-### ETL pipeline automates the quarterly extraction, transformation, and loading of holdings data from multiple Swedish index funds.
+# SwedFund ETL – Swedish Index Funds Pipeline
 
-**Project Overview**
-This project automates the quarterly extraction, transformation, and loading of holdings data from a small subset of Swedish index funds. It focuses on consolidating portfolio holdings by sector and market capitalization to give investors and analysts useful insights into what funds hold.
+**BLUF:** En automatiserad ETL-pipeline och terminal-dashboard som hämtar, transformerar och lagrar innehavsdata från Finansinspektionen (FI) för alla registrerade svenska fonder.
 
-**Purpose**
-To simplify gathering holdings info from different funds, changing raw asset data into grouped sectors and market caps. This makes it easier to compare, spot trends, analyze risks, and make smarter investment choices.
+---
 
+## Architecture & Data Flow
 
-**ETL Pipeline**
-• Extract: Automatically grabs holdings data (stocks, weights) from Swedish index funds every quarter using Finansinspektionen's zipped XML files.
-• Transform: Cleans the data and group holdings by sector, market cap, or other useful categories.
-• Load: Put the cleaned and grouped data into a database or dashboard so it’s easy to see, report on, and analyze.
+```text
+[Finansinspektionen XML]
+        │
+        ▼
+[fetch_fi_data.py] ── Hämtar & packar upp ZIP-arkiv
+        │
+        ▼
+[transform.py] ── Rensar, skalare vikter (/10 000), market-cap bucketing
+        │
+        ▼
+┌────────────────────────────────────────────────────────┐
+│                 3-Tier Loader Strategy                 │
+├─────────────────┬──────────────────┬───────────────────┤
+│ load.py         │ load_assets.py   │ load_holdings.py  │
+│ (ORM Bulk       │ (Row-by-row ORM  │ (Raw PostgreSQL   │
+│  Insert, ~60k)  │  ~20k assets)    │  COPY, 1.35M+)    │
+└─────────────────┴──────────────────┴───────────────────┘
+        │
+        ▼
+[PostgreSQL Database] ── analytics.mv_holdings_by_quarter
+        │
+        ▼
+[FastAPI + HTMX Dashboard] ── http://localhost:8000
+```
 
-### Usage
-1. Run the extraction script to download the latest quarterly holdings files from Finansinspektionen.
+---
 
-2. Run the transformation steps to group holdings by sector and market cap.
+## Projektöversikt & Syfte
 
-3. Load the results into a dashboard or database for easy comparison and visualization.
+Projektet automatiserar den kvartalsvisa hanteringen av fondinnehav publicerade av Finansinspektionen (FI). Syftet är att eliminera manuell nedladdning och tolkning av råa XML-filer, samt erbjuda en historisk bild av vad svenska fonder faktiskt äger.
 
-### Tech Stack
+Genom att standardisera sektormappningar och storleksklasser (market-cap buckets) över tid blir det enkelt att följa trender, analysera risker och jämföra fonders sammansättning.
 
-Python (ETL scripts and data manipulation)
+---
 
-Pandas & PyYAML (data handling/config)
+## Domänspecifika Affärsregler
 
-PostgreSQL / SQLite (data storage)
+Pipelinen hanterar flera regelverk och datastrukturer specifika för Finansinspektionens rapportering:
 
-Docker (deployment and database environment)
+- **Vikt-skalning (`weight_pct`):** Rådata från FI anger portföljvikter i en fast punkt-skala. Pipelinen dividerar värden med `10 000` för att erhålla faktiska procentvärden.
+- **Börsvärdeskategorisering (Market Cap Bucketing):** Bolag sorteras dynamiskt i *Small*, *Mid*, och *Large Cap* baserat på relativ rankning/percentiler (0–40 %, 40–80 %, 80–100 %).
+- **Sektormappning:** Länder och värdepapper utan explicita branschkoder mappas via heuristik till primära sektorer (*Technology*, *Industrials*, *Financials*, m.fl.).
 
-**Expected Conclusion**
-Investors, analysts, and portfolio managers get an up-to-date, clear view of how Swedish index funds are composed each quarter. This makes comparing funds easier by aiding understanding of sector & market risks better. The setup cuts down on manual work and gives timely, standardized insights to back investment decisions. 
+---
 
-**Final Conclusion**
-The ETL pipeline successfully extracted 1.35M holdings from 8,976 XML files across 892 Swedish index funds, transformed them into 59,312 fund × sector × quarter allocations, and loaded them into PostgreSQL. The database now contains 28,437 unique securities categorized into 7 sectors. Work is still left to be done: we need to get it to Tableau or Power BI, and optionally automated validation of the extracted data using a CI.
+## Prestanda & Inläsningsstrategi
 
+För att undvika prestandaflaskhalsar vid hantering av över 1,35 miljoner rader är inläsningen uppdelad i tre optimerade laddare:
+
+| Skript | Måldata | Volym | Metod | Tid |
+| :--- | :--- | :--- | :--- | :--- |
+| `load.py` | Fond- och sektorallokeringar | ~60k rader | SQLAlchemy ORM Bulk Insert | ~40 s |
+| `load_assets.py` | Värdepapper och ISIN:er | ~20k rader | Row-by-row ORM (validering) | ~8 s |
+| `load_holdings.py` | Portföljinnehav | 1,35M+ rader | Raw PostgreSQL `COPY` + Upsert | ~9 s |
+
+---
+
+## Snabbstart & Körning
+
+### 1. Förutsättningar
+
+- Python 3.10+
+- Docker och Docker Compose
+
+### 2. Starta databasen
+
+```bash
+docker-compose up -d
+```
+
+### 3. Kör ETL-pipelinen
+
+```bash
+# Hämta och transformera data från FI
+python run_pipeline.py
+```
+
+### 4. Starta terminal-dashboarden
+
+```bash
+python dashboard_main.py
+```
+
+Öppna [http://localhost:8000](http://localhost:8000) för att söka i innehav via HTMX-gränssnittet.
+
+---
+
+## Teknisk Stack
+
+- **Språk & ramverk:** Python 3, Pandas, FastAPI, HTMX, Jinja2
+- **Databas:** PostgreSQL 15, SQLAlchemy, Psycopg2
+- **Infrastruktur:** Docker, Docker Compose
+- **Konfiguration:** PyYAML
+
+---
+
+## Friskrivning
+
+Detta projekt är ett självständigt initiativ och har ingen officiell koppling till Finansinspektionen.

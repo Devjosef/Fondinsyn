@@ -22,10 +22,10 @@ def transform_holdings(raw_holdings: pd.DataFrame) -> Iterator[pd.DataFrame]:
     df = df.dropna(subset=['weight_pct'])
     df = df[df['weight_pct'] >= 0]
 
-    # Try to parse the quarters efficiently
+    # Trying to parse the quarters efficiently
     df['quarter'] = pd.to_datetime(df['quarter_end'], errors='coerce').dt.to_period('Q').astype(str)
     
-    # Bucketing for market value
+    # Bucketing for market value using bins
     df['market_cap_raw'] = pd.to_numeric(df['market_value_sek'], errors='coerce')
     market_cap_groups = pd.cut(
         df['market_cap_raw'].rank(pct=True, na_option='keep'), 

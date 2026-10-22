@@ -100,7 +100,6 @@ def load_holdings_from_csv(csv_path: str, config: dict) -> int:
             database=db_config['db_name'],
             user=db_config['user'],
             password=db_config['password'],
-            isolation_level=ISOLATION_LEVEL_READ_COMMITTED
         ) as conn:
             with conn.cursor() as cur:
                 cur.execute("SELECT id, name FROM raw.funds")
@@ -132,6 +131,8 @@ def load_holdings_from_csv(csv_path: str, config: dict) -> int:
         return 0
     
     staging_file = 'holdings_staging.csv'
+    df['fund_id'] = df['fund_id'].astype(int)
+    df['asset_id'] = df['asset_id'].astype(int)
     try:
         df[['fund_id', 'asset_id', 'weight_pct', 'quarter_end']].to_csv(
             staging_file, index=False, header=False
@@ -158,7 +159,6 @@ def load_holdings_from_csv(csv_path: str, config: dict) -> int:
             database=db_config['db_name'],
             user=db_config['user'],
             password=db_config['password'],
-            isolation_level=ISOLATION_LEVEL_READ_COMMITTED
         ) as conn:
             with conn.cursor() as cur:
                 create_staging_table(cur, staging_ddl)

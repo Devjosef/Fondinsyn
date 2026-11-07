@@ -1,107 +1,95 @@
-# SwedFund ETL – Swedish Index Funds Pipeline
+# Fondinsyn — Quarterly Swedish Fund-Holdings Explorer
 
-**BLUF:** En automatiserad ETL-pipeline och terminal-dashboard som hämtar, transformerar och lagrar innehavsdata från Finansinspektionen (FI) för alla registrerade svenska fonder.
+**A Swedish-language historical quarterly fund-holdings explorer built on public data from Finansinspektionen (FI).**
 
----
+Fondinsyn presents reported fund holdings as historical quarter-end snapshots for informational and analysis purposes.
 
-## Architecture & Data Flow
+## Architecture
+
+- **Application:** Python, FastAPI, Jinja2, HTMX
+- **Data store:** PostgreSQL
+- **Deployment:** Docker
+- **ETL:** FI quarterly XML archives are fetched, parsed, transformed, and loaded to PostgreSQL. Analytics materialized views are refreshed after the load.
 
 ```text
-[Finansinspektionen XML]
-        │
-        ▼
-[fetch_fi_data.py] ── Hämtar & packar upp ZIP-arkiv
-        │
-        ▼
-[transform.py] ── Rensar, skalare vikter (/10 000), market-cap bucketing
-        │
-        ▼
-┌────────────────────────────────────────────────────────┐
-│                 3-Tier Loader Strategy                 │
-├─────────────────┬──────────────────┬───────────────────┤
-│ load.py         │ load_assets.py   │ load_holdings.py  │
-│ (ORM Bulk       │ (Row-by-row ORM  │ (Raw PostgreSQL   │
-│  Insert, ~60k)  │  ~20k assets)    │  COPY, 1.35M+)    │
-└─────────────────┴──────────────────┴───────────────────┘
-        │
-        ▼
-[PostgreSQL Database] ── analytics.mv_holdings_by_quarter
-        │
-        ▼
-[FastAPI + HTMX Dashboard] ── http://localhost:8000
+FI quarterly XML -> ETL -> PostgreSQL -> FastAPI / HTMX Fondinsyn
+                                  \-> optional Superset analytics
 ```
 
----
+Superset is an optional analyst-facing layer. The Fondinsyn application remains the primary interface. ETL synchronization provisions its quarterly dashboard from the refreshed analytics views.
 
-## Projektöversikt & Syfte
+## Data and capabilities
 
-Projektet automatiserar den kvartalsvisa hanteringen av fondinnehav publicerade av Finansinspektionen (FI). Syftet är att eliminera manuell nedladdning och tolkning av råa XML-filer, samt erbjuda en historisk bild av vad svenska fonder faktiskt äger.
+- Automated parsing and ingestion of Finansinspektionen quarterly XML data.
+- `/datastatus` lists available quarters, ingestion states, FI source URLs, source filenames, and available publication metadata.
+- `/compare` compares two reported quarter-end snapshots, including QoQ market-value and portfolio-weight changes and the labels **Ny position**, **Ökad position**, **Minskad position**, and **Avslutad position**.
+- Holdings search results include FI source URL and filename and a publication date derived from the archive filename when present.
+- The current control schema does not record distinct download timestamps or PostgreSQL upsert timestamps. The UI identifies these as unrecorded rather than presenting fetch completion as an upsert time.
+- Holdings are ingested idempotently using quarter, fund, and instrument identifiers. Records missing an ISIN are excluded by the current loader; FI's source files are not changed.
 
-Genom att standardisera sektormappningar och storleksklasser (market-cap buckets) över tid blir det enkelt att följa trender, analysera risker och jämföra fonders sammansättning.
+## Routes
 
----
+| Route | Purpose |
+|---|---|
+| `/` | Latest available quarterly holdings and HTMX search |
+| `/datastatus` | Quarterly release and ingestion status |
+| `/compare` | Side-by-side comparison of two historical quarters |
+| `/api/search` | Search results as an HTML fragment |
+| `/api/diagnostics` | Database connectivity and latest-quarter diagnostics |
+| `/api/kpis` | Latest-quarter reported holdings market value and fund count |
 
-## Domänspecifika Affärsregler
+## Local development
 
-Pipelinen hanterar flera regelverk och datastrukturer specifika för Finansinspektionens rapportering:
+Requirements: Python 3.10+, PostgreSQL 15+, and (for Docker execution) Docker.
 
-- **Vikt-skalning (`weight_pct`):** Rådata från FI anger portföljvikter i en fast punkt-skala. Pipelinen dividerar värden med `10 000` för att erhålla faktiska procentvärden.
-- **Börsvärdeskategorisering (Market Cap Bucketing):** Bolag sorteras dynamiskt i *Small*, *Mid*, och *Large Cap* baserat på relativ rankning/percentiler (0–40 %, 40–80 %, 80–100 %).
-- **Sektormappning:** Länder och värdepapper utan explicita branschkoder mappas via heuristik till primära sektorer (*Technology*, *Industrials*, *Financials*, m.fl.).
-
----
-
-## Prestanda & Inläsningsstrategi
-
-För att undvika prestandaflaskhalsar vid hantering av över 1,35 miljoner rader är inläsningen uppdelad i tre optimerade laddare:
-
-| Skript | Måldata | Volym | Metod | Tid |
-| :--- | :--- | :--- | :--- | :--- |
-| `load.py` | Fond- och sektorallokeringar | ~60k rader | SQLAlchemy ORM Bulk Insert | ~40 s |
-| `load_assets.py` | Värdepapper och ISIN:er | ~20k rader | Row-by-row ORM (validering) | ~8 s |
-| `load_holdings.py` | Portföljinnehav | 1,35M+ rader | Raw PostgreSQL `COPY` + Upsert | ~9 s |
-
----
-
-## Snabbstart & Körning
-
-### 1. Förutsättningar
-
-- Python 3.10+
-- Docker och Docker Compose
-
-### 2. Starta databasen
+1. Create a local `.env` file containing a `DATABASE_URL` for your PostgreSQL instance. `.env` is ignored by Git; do not commit credentials.
+2. Install dependencies and start the application:
 
 ```bash
-docker-compose up -d
+python3 -m venv .venv
+source .venv/bin/activate
+python -m pip install -r requirements.txt
+python -m app.dashboard_main
 ```
 
-### 3. Kör ETL-pipelinen
+Open [http://localhost:8000](http://localhost:8000). If `DATABASE_URL` is unset or PostgreSQL is unavailable, the interface falls back to mock data for local UI testing.
+
+To run the ETL, configure the local, Git-ignored `config/config.yaml` and run:
 
 ```bash
-# Hämta och transformera data från FI
-python run_pipeline.py
+python -m app.run_pipeline
 ```
 
-### 4. Starta terminal-dashboarden
+To start the application and PostgreSQL together in Docker:
 
 ```bash
-python dashboard_main.py
+cp .env.example .env
+# Set a private POSTGRES_PASSWORD in .env before starting
+docker compose up --build
 ```
 
-Öppna [http://localhost:8000](http://localhost:8000) för att söka i innehav via HTMX-gränssnittet.
+Open [http://localhost:8000](http://localhost:8000). To run only the application image, use `docker build -t fondinsyn-web .` followed by `docker run --rm --env-file .env -p 8000:8000 fondinsyn-web`.
 
----
+## Repository layout
 
-## Teknisk Stack
+- `app/`: FastAPI server, database models and SQL, ETL pipeline, and operational tools.
+- `templates/`: Jinja2/HTMX pages and fragments.
+- `static/`: Static assets, including images.
+- `docs/`: Product, system, and pipeline documentation.
+- `tests/`: Automated layout and application checks.
+- Root: application configuration, Docker files, dependencies, and this README.
 
-- **Språk & ramverk:** Python 3, Pandas, FastAPI, HTMX, Jinja2
-- **Databas:** PostgreSQL 15, SQLAlchemy, Psycopg2
-- **Infrastruktur:** Docker, Docker Compose
-- **Konfiguration:** PyYAML
+## Compliance and data source
 
----
+Data source: [Finansinspektionen open data](https://www.fi.se/sv/om-fi/om-webbplatsen/oppen-data/).
 
-## Friskrivning
+### Viktig information
 
-Detta projekt är ett självständigt initiativ och har ingen officiell koppling till Finansinspektionen.
+Datakälla: Finansinspektionen (FI). Uppgifterna hämtas från FI:s offentligt tillgängliga data.
+Källa och hämtningsdatum anges för respektive datamängd.
+
+Fondinsyn är ett oberoende projekt och är inte affilierat med, godkänt av eller utgivet av Finansinspektionen.
+Finansinspektionen ansvarar inte för innehåll, beräkningar, tolkningar eller beslut baserade på denna tjänst.
+
+Informationen avser kvartalsvisa innehav och kan vara ofullständig, fördröjd eller innehålla fel.
+Tjänsten är endast avsedd för informations- och analysändamål och utgör inte investeringsrådgivning, finansiell rådgivning eller ett rekommendationsunderlag.

@@ -2,7 +2,31 @@
 <tr class="hover:bg-slate-800/30 transition-colors">
     <td class="py-3 px-4 font-mono text-xs text-slate-300">{{ h.isin }}</td>
     <td class="py-3 px-4 text-slate-200">{{ h.fund_name }}</td>
-    <td class="py-3 px-4 text-slate-200 font-medium">{{ h.security_name }}</td>
+    <td class="py-3 px-4 text-slate-200 font-medium">
+        {{ h.security_name }}
+        <details class="mt-1 text-xs font-normal text-slate-400">
+            <summary class="cursor-pointer text-sky-300 hover:text-white">Visa revisionsuppgifter</summary>
+            <div class="mt-2 max-w-md space-y-1 rounded border border-sky-500/20 bg-slate-950/80 p-3">
+                <p>Källa: {{ h.source_file_name or "Ej registrerad" }}</p>
+                <p>Publicerad:
+                    {{ h.fi_publication_date.strftime("%Y-%m-%d %H:%M") if h.fi_publication_date else "Ej registrerat" }}
+                </p>
+                <p>Hämtad:
+                    {{ h.download_timestamp.strftime("%Y-%m-%d %H:%M:%S") if h.download_timestamp else "Hämtningstid registreras inte" }}
+                </p>
+                <p>Inläst:
+                    {{ h.ingestion_timestamp.strftime("%Y-%m-%d %H:%M:%S") if h.ingestion_timestamp else "PostgreSQL-upsertens tid registreras inte" }}
+                </p>
+                <p>Kvartal: {{ h.quarter_id or "Ej registrerat" }}</p>
+                {% if h.source_url %}
+                <a href="{{ h.source_url }}" target="_blank" rel="noopener noreferrer"
+                   class="inline-block text-sky-300 underline underline-offset-2 hover:text-white">Öppna FI-källfil</a>
+                {% else %}
+                <p>Käll-URL: Ej registrerad</p>
+                {% endif %}
+            </div>
+        </details>
+    </td>
     <td class="py-3 px-4 font-mono text-xs text-right text-slate-200">
         {{ "{:,.0f}".format(h.market_value_sek) }}
     </td>

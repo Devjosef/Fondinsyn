@@ -1,0 +1,184 @@
+<!DOCTYPE html>
+<html lang="sv">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Jämför kvartal — Fondinsyn</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        body {
+            background-color: #0B101D;
+            color: #F8FAFC;
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+            background-image:
+                radial-gradient(rgba(56, 189, 248, 0.18) 1.5px, transparent 1.5px),
+                linear-gradient(to right, rgba(56, 189, 248, 0.03) 1px, transparent 1px),
+                linear-gradient(to bottom, rgba(56, 189, 248, 0.03) 1px, transparent 1px);
+            background-size: 32px 32px, 128px 128px, 128px 128px;
+        }
+        .mono-number { font-family: 'JetBrains Mono', 'Fira Code', monospace; }
+    </style>
+</head>
+<body class="min-h-screen flex flex-col antialiased">
+    <header class="border-b border-sky-500/20 bg-slate-950/90">
+        <div class="mx-auto flex min-h-14 max-w-7xl items-center justify-between gap-4 px-4">
+            <span class="font-bold tracking-wider text-white">Fondinsyn</span>
+            <nav aria-label="Huvudnavigation" class="flex items-center gap-5 text-sm">
+                <a href="/" class="text-sky-300 transition hover:text-white">Till innehaven</a>
+                <a href="/datastatus" class="text-sky-300 transition hover:text-white">Datastatus</a>
+                <span aria-current="page" class="font-semibold text-white">Jämför kvartal</span>
+            </nav>
+        </div>
+    </header>
+
+    <main class="mx-auto w-full max-w-7xl flex-1 space-y-8 px-4 py-10">
+        <section class="space-y-3 border-b border-sky-500/20 pb-6">
+            <p class="font-mono text-xs font-semibold uppercase tracking-widest text-sky-300">Historiska kvartalsvisa ögonblicksbilder</p>
+            <h1 class="text-3xl font-extrabold tracking-tight text-white">Jämför fondinnehav</h1>
+            {% if previous and current and previous_end and current_end %}
+            <p class="text-lg text-sky-200">
+                Jämförelse: <span class="mono-number font-semibold text-white">{{ previous }}</span>
+                vs <span class="mono-number font-semibold text-white">{{ current }}</span>
+            </p>
+            <p class="text-sm text-slate-300">
+                Rapporterat datum:
+                <span class="mono-number text-white">{{ previous_end.strftime("%Y-%m-%d") }}</span>
+                och
+                <span class="mono-number text-white">{{ current_end.strftime("%Y-%m-%d") }}</span>
+            </p>
+            {% endif %}
+        </section>
+
+        <form method="get" action="/compare" class="flex flex-col gap-4 rounded-lg border border-sky-500/30 bg-slate-900/80 p-5 sm:flex-row sm:items-end">
+            <label class="flex flex-1 flex-col gap-2 text-sm text-slate-300">
+                Äldre kvartal
+                <select name="previous" required class="rounded border border-sky-500/30 bg-slate-950 px-3 py-2 text-white">
+                    {% for quarter in quarters %}
+                    <option value="{{ quarter.quarter_id }}" {% if quarter.quarter_id == previous %}selected{% endif %}>
+                        {{ quarter.quarter_id }} — {{ quarter.quarter_end_date.strftime("%Y-%m-%d") }}
+                    </option>
+                    {% endfor %}
+                </select>
+            </label>
+            <label class="flex flex-1 flex-col gap-2 text-sm text-slate-300">
+                Nyare kvartal
+                <select name="current" required class="rounded border border-sky-500/30 bg-slate-950 px-3 py-2 text-white">
+                    {% for quarter in quarters %}
+                    <option value="{{ quarter.quarter_id }}" {% if quarter.quarter_id == current %}selected{% endif %}>
+                        {{ quarter.quarter_id }} — {{ quarter.quarter_end_date.strftime("%Y-%m-%d") }}
+                    </option>
+                    {% endfor %}
+                </select>
+            </label>
+            <button type="submit" class="rounded border border-sky-400/50 bg-sky-900/60 px-5 py-2 font-semibold text-sky-100 transition hover:bg-sky-800">
+                Jämför kvartal
+            </button>
+        </form>
+
+        <section aria-label="Metod och datakälla" class="space-y-2 rounded-lg border border-amber-400/40 bg-amber-950/30 p-5 text-sm leading-6 text-amber-100">
+            <p>Förändringar beräknas utifrån kvartalsvisa ögonblicksbilder och återspeglar inte löpande handel.</p>
+            <p>En förändring kan bero på ombalansering, värdeförändringar i marknaden, ny rapportering eller datarevideringar.</p>
+            <p>Andel av fondförmögenhet anges i procent och ska inte tolkas som antal värdepapper.</p>
+            <a class="inline-block text-sky-300 underline underline-offset-2 hover:text-white"
+               href="https://www.fi.se/sv/om-fi/om-webbplatsen/oppen-data/"
+               target="_blank" rel="noopener noreferrer">Datakälla: Finansinspektionen</a>
+        </section>
+        {% if previous_audit and current_audit %}
+        <section aria-label="Jämförelsens revisionsmetadata" class="grid gap-3 md:grid-cols-2">
+            {% for label, audit in [("Äldre kvartal", previous_audit), ("Nyare kvartal", current_audit)] %}
+            <div class="rounded border border-sky-500/20 bg-slate-950/70 p-4 text-xs leading-5 text-slate-300">
+                <h2 class="mb-1 font-semibold text-white">{{ label }} — {{ audit.quarter_id or "Kvartal saknas" }}</h2>
+                <p>
+                    Källa: {{ audit.source_file_name or "Ej registrerad" }}
+                    | Publicerad: {{ audit.fi_publication_date.strftime("%Y-%m-%d %H:%M") if audit.fi_publication_date else "Ej registrerat" }}
+                    | Hämtad: {{ audit.download_timestamp.strftime("%Y-%m-%d %H:%M:%S") if audit.download_timestamp else "Hämtningstid registreras inte" }}
+                    | Inläst: {{ audit.ingestion_timestamp.strftime("%Y-%m-%d %H:%M:%S") if audit.ingestion_timestamp else "PostgreSQL-upsertens tid registreras inte" }}
+                </p>
+                {% if audit.fetch_completed_at %}
+                <p>Källfilens hämtning och extrahering slutfördes: {{ audit.fetch_completed_at.strftime("%Y-%m-%d %H:%M:%S") }}</p>
+                {% endif %}
+                {% if audit.source_url %}
+                <a href="{{ audit.source_url }}" target="_blank" rel="noopener noreferrer"
+                   class="mt-2 inline-block text-sky-300 underline underline-offset-2 hover:text-white">Öppna FI-källfil</a>
+                {% else %}
+                <p class="mt-2">Käll-URL: Ej registrerad</p>
+                {% endif %}
+            </div>
+            {% endfor %}
+        </section>
+        {% endif %}
+
+        {% if error %}
+        <p role="status" class="rounded-lg border border-amber-400/50 bg-amber-950/40 p-4 text-amber-100">{{ error }}</p>
+        {% elif comparisons %}
+        <section class="overflow-hidden rounded-lg border border-sky-500/30 bg-slate-950/80">
+            <div class="border-b border-sky-500/20 px-4 py-3 text-sm text-slate-300">
+                Visar {{ comparisons|length }} av {{ total_count }} innehav
+            </div>
+            <div class="overflow-x-auto">
+                <table class="w-full min-w-[1150px] text-left text-sm">
+                    <thead class="bg-slate-900 text-xs uppercase tracking-wide text-slate-300">
+                        <tr>
+                            <th scope="col" class="px-4 py-3">Fond</th>
+                            <th scope="col" class="px-4 py-3">Innehav</th>
+                            <th scope="col" class="px-4 py-3 text-right">Andel av fondförmögenhet ({{ previous }})</th>
+                            <th scope="col" class="px-4 py-3 text-right">Andel av fondförmögenhet ({{ current }})</th>
+                            <th scope="col" class="px-4 py-3 text-right">Ändring i marknadsvärde (SEK)</th>
+                            <th scope="col" class="px-4 py-3 text-right">Ändring i andel (procentenheter)</th>
+                            <th scope="col" class="px-4 py-3">Positionsstatus</th>
+                        </tr>
+                    </thead>
+                    <tbody class="divide-y divide-sky-500/10">
+                        {% for item in comparisons %}
+                        <tr class="align-top text-slate-200">
+                            <td class="px-4 py-3">{{ item.fund_name }}</td>
+                            <td class="px-4 py-3">
+                                <span class="block font-medium text-white">{{ item.security_name }}</span>
+                                <span class="mono-number text-xs text-slate-400">{{ item.isin or "ISIN saknas" }}</span>
+                            </td>
+                            <td class="mono-number whitespace-nowrap px-4 py-3 text-right">
+                                {{ "%.2f%%"|format(item.previous_weight) if item.previous_weight is not none else "—" }}
+                            </td>
+                            <td class="mono-number whitespace-nowrap px-4 py-3 text-right">
+                                {{ "%.2f%%"|format(item.current_weight) if item.current_weight is not none else "—" }}
+                            </td>
+                            <td class="mono-number whitespace-nowrap px-4 py-3 text-right">
+                                {{ "%+.2f"|format(item.market_value_change_sek) }}
+                            </td>
+                            <td class="mono-number whitespace-nowrap px-4 py-3 text-right">
+                                {{ "%+.4f"|format(item.weight_change) if item.weight_change is not none else "—" }}
+                            </td>
+                            <td class="whitespace-nowrap px-4 py-3">{{ item.status }}</td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+            {% if total_pages > 1 %}
+            <nav aria-label="Sidnumrering" class="flex items-center justify-between border-t border-sky-500/20 px-4 py-3 text-sm">
+                {% if page > 1 %}
+                <a class="text-sky-300 underline underline-offset-2 hover:text-white"
+                   href="/compare?previous={{ previous }}&amp;current={{ current }}&amp;page={{ page - 1 }}">Föregående</a>
+                {% else %}
+                <span class="text-slate-500">Föregående</span>
+                {% endif %}
+                <span class="mono-number text-slate-300">Sida {{ page }} av {{ total_pages }}</span>
+                {% if page < total_pages %}
+                <a class="text-sky-300 underline underline-offset-2 hover:text-white"
+                   href="/compare?previous={{ previous }}&amp;current={{ current }}&amp;page={{ page + 1 }}">Nästa</a>
+                {% else %}
+                <span class="text-slate-500">Nästa</span>
+                {% endif %}
+            </nav>
+            {% endif %}
+        </section>
+        {% elif not error and previous and current and total_count == 0 %}
+        <p role="status" class="rounded-lg border border-sky-500/30 bg-slate-900/80 p-4 text-slate-300">Inga instrumentposter finns i de valda kvartalen.</p>
+        {% elif not error and previous and current %}
+        <p role="status" class="rounded-lg border border-sky-500/30 bg-slate-900/80 p-4 text-slate-300">Inga innehav visas på den här sidan.</p>
+        {% endif %}
+    </main>
+
+    {% include 'disclaimer.html' %}
+</body>
+</html>

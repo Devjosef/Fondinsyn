@@ -1,0 +1,144 @@
+<!DOCTYPE html>
+<html lang="sv">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Datastatus — Fondinsyn</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        body {
+            background-color: #0B101D;
+            color: #F8FAFC;
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+            background-image:
+                radial-gradient(rgba(56, 189, 248, 0.18) 1.5px, transparent 1.5px),
+                linear-gradient(to right, rgba(56, 189, 248, 0.03) 1px, transparent 1px),
+                linear-gradient(to bottom, rgba(56, 189, 248, 0.03) 1px, transparent 1px);
+            background-size: 32px 32px, 128px 128px, 128px 128px;
+        }
+        .mono-number { font-family: 'JetBrains Mono', 'Fira Code', monospace; }
+    </style>
+</head>
+<body class="min-h-screen flex flex-col antialiased">
+    <header class="border-b border-sky-500/20 bg-slate-950/90">
+        <div class="mx-auto flex min-h-14 max-w-7xl items-center justify-between gap-4 px-4">
+            <span class="font-bold tracking-wider text-white">Fondinsyn</span>
+            <nav aria-label="Huvudnavigation" class="flex items-center gap-5 text-sm">
+                <a href="/" class="text-sky-300 transition hover:text-white">Till innehaven</a>
+                <span aria-current="page" class="font-semibold text-white">Datastatus</span>
+            </nav>
+        </div>
+    </header>
+
+    <main class="mx-auto w-full max-w-7xl flex-1 space-y-8 px-4 py-10">
+        <section class="space-y-3 border-b border-sky-500/20 pb-6">
+            <p class="font-mono text-xs font-semibold uppercase tracking-widest text-sky-300">Kvartalsdata från Finansinspektionen</p>
+            <h1 class="text-3xl font-extrabold tracking-tight text-white">Datastatus</h1>
+            {% if ingestion.latest_available_quarter %}
+            <p class="text-lg text-sky-200">
+                Senaste tillgängliga kvartal:
+                <span class="mono-number font-semibold text-white">{{ ingestion.latest_available_quarter }}</span>
+            </p>
+            {% else %}
+            <p class="text-slate-300">Senaste tillgängliga kvartal är ännu inte registrerat i tjänsten.</p>
+            {% endif %}
+        </section>
+
+        {% if ingestion.error %}
+        <p role="status" class="rounded-lg border border-amber-400/50 bg-amber-950/40 p-4 text-amber-100">{{ ingestion.error }}</p>
+        {% endif %}
+
+        <section class="grid gap-4 sm:grid-cols-3" aria-label="Senaste inläsning">
+            <div class="rounded-lg border border-sky-500/30 bg-slate-900/80 p-5">
+                <h2 class="text-sm text-slate-300">Senast hämtade och extraherade kvartal</h2>
+                <p class="mono-number mt-2 text-xl font-semibold text-white">{{ ingestion.latest_file_completed_quarter or "Ej slutförd" }}</p>
+            </div>
+            <div class="rounded-lg border border-sky-500/30 bg-slate-900/80 p-5">
+                <h2 class="text-sm text-slate-300">Senaste slutförda filhämtning och extrahering</h2>
+                <p class="mono-number mt-2 text-xl font-semibold text-white">
+                    {% if ingestion.last_completed_fetch %}
+                    {{ ingestion.last_completed_fetch.strftime("%Y-%m-%d %H:%M:%S") }}
+                    {% else %}
+                    Ej registrerad
+                    {% endif %}
+                </p>
+            </div>
+            <div class="rounded-lg border border-sky-500/30 bg-slate-900/80 p-5">
+                <h2 class="text-sm text-slate-300">Rapporterade kvartal</h2>
+                <p class="mono-number mt-2 text-xl font-semibold text-white">{{ ingestion.quarters|length }}</p>
+            </div>
+        </section>
+
+        <section class="overflow-hidden rounded-lg border border-sky-500/30 bg-slate-950/80">
+            <div class="border-b border-sky-500/20 px-5 py-4">
+                <h2 class="text-lg font-semibold text-white">Kvartalsvisa datautgåvor</h2>
+                <p class="mt-1 text-sm text-slate-400">Källfilens färdigdatum skiljs från PostgreSQL-upsert. Hämtningstid och upsert-tid registreras inte i nuvarande kontrollschema.</p>
+            </div>
+            <div class="overflow-x-auto">
+                <table class="w-full min-w-[1050px] text-left text-sm">
+                    <thead class="bg-slate-900 text-xs uppercase tracking-wide text-slate-300">
+                        <tr>
+                            <th scope="col" class="px-4 py-3">Kvartal</th>
+                            <th scope="col" class="px-4 py-3">Rapporterat datum</th>
+                            <th scope="col" class="px-4 py-3">Status</th>
+                            <th scope="col" class="px-4 py-3">Källfil</th>
+                            <th scope="col" class="px-4 py-3">Publicerat datum enligt FI:s källfil</th>
+                            <th scope="col" class="px-4 py-3">Hämtat datum</th>
+                            <th scope="col" class="px-4 py-3">Källfil klar</th>
+                            <th scope="col" class="px-4 py-3">PostgreSQL-upsert</th>
+                            <th scope="col" class="px-4 py-3">Käll-URL</th>
+                        </tr>
+                    </thead>
+                    <tbody class="divide-y divide-sky-500/10">
+                        {% for quarter in ingestion.quarters %}
+                        <tr class="align-top text-slate-200">
+                            <th scope="row" class="mono-number whitespace-nowrap px-4 py-4 font-semibold text-white">{{ quarter.quarter_id }}</th>
+                            <td class="whitespace-nowrap px-4 py-4">
+                                {{ quarter.quarter_end_date.strftime("%Y-%m-%d") if quarter.quarter_end_date else "Ogiltigt kvartals-ID" }}
+                            </td>
+                            <td class="whitespace-nowrap px-4 py-4">
+                                {% if quarter.status_class == "failed" %}
+                                <span class="rounded-full border border-rose-400/40 bg-rose-950/50 px-2.5 py-1 text-rose-200">{{ quarter.status_label }}</span>
+                                {% elif quarter.status_class == "processing" %}
+                                <span class="rounded-full border border-amber-400/40 bg-amber-950/50 px-2.5 py-1 text-amber-200">{{ quarter.status_label }}</span>
+                                {% else %}
+                                <span class="rounded-full border border-emerald-400/40 bg-emerald-950/50 px-2.5 py-1 text-emerald-200">{{ quarter.status_label }}</span>
+                                {% endif %}
+                            </td>
+                            <td class="px-4 py-4">{{ quarter.source_file_name or "Ej registrerad" }}</td>
+                            <td class="whitespace-nowrap px-4 py-4">
+                                {{ quarter.publication_date.strftime("%Y-%m-%d") if quarter.publication_date else "Ej registrerat" }}
+                            </td>
+                            <td class="whitespace-nowrap px-4 py-4">
+                                {{ quarter.download_timestamp.strftime("%Y-%m-%d %H:%M:%S") if quarter.download_timestamp else "Hämtningstid registreras inte" }}
+                            </td>
+                            <td class="whitespace-nowrap px-4 py-4">
+                                {{ quarter.fetch_completed_at.strftime("%Y-%m-%d %H:%M:%S") if quarter.fetch_completed_at else "Ej registrerad" }}
+                            </td>
+                            <td class="whitespace-nowrap px-4 py-4">
+                                {{ quarter.ingestion_timestamp.strftime("%Y-%m-%d %H:%M:%S") if quarter.ingestion_timestamp else "Upsert-tid registreras inte" }}
+                            </td>
+                            <td class="max-w-xs break-all px-4 py-4">
+                                {% if quarter.file_url %}
+                                <a href="{{ quarter.file_url }}" target="_blank" rel="noopener noreferrer" class="text-sky-300 underline underline-offset-2 hover:text-white">Öppna källfil</a>
+                                {% else %}
+                                Ej registrerad
+                                {% endif %}
+                            </td>
+                        </tr>
+                        {% else %}
+                        <tr>
+                            <td colspan="9" class="px-4 py-8 text-center text-slate-400">
+                                Inga kvartalsutgåvor har registrerats ännu.
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </section>
+    </main>
+
+    {% include 'disclaimer.html' %}
+</body>
+</html>

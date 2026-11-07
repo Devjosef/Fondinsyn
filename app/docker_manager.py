@@ -1,17 +1,3 @@
-"""
-Docker Manager: Container Orchestration & Health Verification
-
-Purpose:
-- Find and verify Docker containers (Superset analytics & PostgreSQL ETL database)
-- Monitor container health states and HTTP endpoints
-- Execute commands (like clearing Superset cache)
-- Export operational trace logs for debugging
-
-Container Targets:
-1. Superset: apache/superset (http://localhost:8088/health)
-2. Swedish Funds ETL DB: postgres:15 (port 5432)
-"""
-
 import io
 import json
 import logging
@@ -64,8 +50,6 @@ class TraceLevel(Enum):
 
 
 class DockerAPITrace:
-    """Records Docker API interactions for debugging."""
-    
     def __init__(self):
         self.traces: List[Dict] = []
         self.boundary_violations: List[Dict] = []
@@ -128,8 +112,6 @@ class DockerAPITrace:
 
 
 class DockerClientManager:
-    """Manages connection to the Docker daemon socket."""
-    
     def __init__(self):
         self.client: Optional[docker.DockerClient] = None
         self.trace = DockerAPITrace()
@@ -160,8 +142,6 @@ class DockerClientManager:
 
 
 class ContainerDiscovery:
-    """Finds and validates target containers."""
-    
     def __init__(self, client_manager: DockerClientManager):
         self.client_manager = client_manager
         self.discovered_containers: Dict[str, Container] = {}
@@ -210,8 +190,6 @@ class ContainerDiscovery:
 
 
 class HealthChecker:
-    """Verifies container status and health endpoints."""
-    
     def __init__(self, trace: DockerAPITrace):
         self.trace = trace
     
@@ -270,8 +248,6 @@ class HealthChecker:
 
 
 class ContainerExecutor:
-    """Runs commands inside active containers."""
-    
     def __init__(self, trace: DockerAPITrace):
         self.trace = trace
     
@@ -307,8 +283,6 @@ class ContainerExecutor:
 
 
 class DockerOrchestrator:
-    """Coordinates container discovery, validation, and execution."""
-    
     def __init__(self):
         self.client_manager = DockerClientManager()
         self.discovery = ContainerDiscovery(self.client_manager)

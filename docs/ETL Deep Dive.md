@@ -5,6 +5,8 @@ date: 2026-08-14
 status: Refactor Notes
 ---
 
+**A Swedish-language quarterly fund-holdings explorer built on public data from Finansinspektionen.**
+
 ## Why I Refactored
 
 Previously, the pipeline assumed Finansinspektionen (FI) data was complete, database schema operations wouldn't clash, and long-running queries wouldn't lock the UI. If a network call dropped or a row constraint failed, the script would fail silently, leave staging tables behind, or lock Superset dashboards.
@@ -28,7 +30,7 @@ Instead of dumping files straight into the database, data flows through five pla
 2. **Download & Extract:** We pull zip files with automatic retries and parse the raw XML.
 3. **Validate & Stage:** We drop bad ISINs or weights early, record row loss metrics, and write clean records to a temporary staging table.
 4. **Savepoint Upsert:** We write to production tables using `SAVEPOINT`. If an error occurs, we roll back *only* that batch without crashing the entire transaction.
-5. **Refresh Dashboards:** Materialized views update concurrently using unique indexes so users can keep querying Superset while data reloads.
+5. **Refresh Analytics:** Materialized views are refreshed after loading. The ETL then provisions the optional Fondinsyn Superset datasets and charts from those views and clears the Superset cache.
 
 ---
 
@@ -59,7 +61,7 @@ Every run persists audit data across the system:
 
 ```bash
 # Run the complete pipeline
-python run_pipeline.py
+python -m app.run_pipeline
 
 # Check the exit status
 echo $?

@@ -5,6 +5,8 @@ date: 2026-08-14
 status: Refactor Notes
 ---
 
+**A Swedish-language quarterly fund-holdings explorer built on public data from Finansinspektionen.**
+
 ## Why We Refactored
 
 Previously, `docker_manager.py` assumed containers were always up and running. If a container was missing or stopped, the script would hang, throw unhandled exceptions, or fail silently.
@@ -56,7 +58,7 @@ Every run generates simple logs in `logs/`:
 
 ```bash
 # Run the orchestrator
-python docker_manager.py
+python -m app.docker_manager
 
 # Check the exit status
 echo $?

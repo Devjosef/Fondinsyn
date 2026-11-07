@@ -1,21 +1,21 @@
 {% for h in holdings %}
-<tr class="hover:bg-slate-800/30 transition-colors">
-    <td class="py-3 px-4 font-mono text-xs text-slate-300">{{ h.isin }}</td>
-    <td class="py-3 px-4 text-slate-200">{{ h.fund_name }}</td>
-    <td class="py-3 px-4 text-slate-200 font-medium">
+<tr class="transition-colors hover:bg-slate-700/40">
+    <td class="whitespace-nowrap px-4 py-4 font-mono text-xs text-slate-300">{{ h.isin or "Saknas" }}</td>
+    <td class="px-4 py-4 text-slate-200">{{ h.fund_name }}</td>
+    <td class="px-4 py-4 font-medium text-slate-100">
         {{ h.security_name }}
-        <details class="mt-1 text-xs font-normal text-slate-400">
-            <summary class="cursor-pointer text-sky-300 hover:text-white">Visa revisionsuppgifter</summary>
-            <div class="mt-2 max-w-md space-y-1 rounded border border-sky-500/20 bg-slate-950/80 p-3">
-                <p>Källa: {{ h.source_file_name or "Ej registrerad" }}</p>
+        <details class="mt-2 text-xs font-normal text-slate-400">
+            <summary class="cursor-pointer text-sky-300 underline decoration-sky-500/40 underline-offset-4 hover:text-white">Visa käll- och inläsningsuppgifter</summary>
+            <div class="mt-3 max-w-lg space-y-2 rounded-lg border border-slate-700 bg-slate-950 p-4 leading-5">
+                <p>Källfil: {{ h.source_file_name or "Inte registrerad" }}</p>
                 <p>Publicerad:
                     {{ h.fi_publication_date.strftime("%Y-%m-%d %H:%M") if h.fi_publication_date else "Ej registrerat" }}
                 </p>
                 <p>Hämtad:
-                    {{ h.download_timestamp.strftime("%Y-%m-%d %H:%M:%S") if h.download_timestamp else "Hämtningstid registreras inte" }}
+                    {{ h.download_timestamp.strftime("%Y-%m-%d %H:%M:%S") if h.download_timestamp else "Tidpunkt ej registrerad" }}
                 </p>
                 <p>Inläst:
-                    {{ h.ingestion_timestamp.strftime("%Y-%m-%d %H:%M:%S") if h.ingestion_timestamp else "PostgreSQL-upsertens tid registreras inte" }}
+                    {{ h.ingestion_timestamp.strftime("%Y-%m-%d %H:%M:%S") if h.ingestion_timestamp else "Tidpunkt ej registrerad" }}
                 </p>
                 <p>Kvartal: {{ h.quarter_id or "Ej registrerat" }}</p>
                 {% if h.source_url %}
@@ -27,14 +27,18 @@
             </div>
         </details>
     </td>
-    <td class="py-3 px-4 font-mono text-xs text-right text-slate-200">
-        {{ "{:,.0f}".format(h.market_value_sek) }}
+    <td class="whitespace-nowrap px-4 py-4 text-right font-mono text-sm text-slate-200">
+        {{ "{:,.0f}".format(h.market_value_sek).replace(",", " ") }}
     </td>
-    <td class="py-3 px-4 font-mono text-xs text-right text-slate-300">
-        {{ "%.2f"|format(h.portfolio_weight) }}%
+    <td class="whitespace-nowrap px-4 py-4 text-right font-mono text-sm text-slate-300">
+        {{ ("%.2f"|format(h.portfolio_weight)).replace(".", ",") }}%
     </td>
-    <td class="py-3 px-4 font-mono text-xs text-right {% if h.qoq_delta > 0 %}text-emerald-400{% elif h.qoq_delta < 0 %}text-rose-400{% else %}text-slate-400{% endif %}">
-        {{ "%+.2f"|format(h.qoq_delta) }}%
+    <td class="whitespace-nowrap px-4 py-4 text-right font-mono text-sm {% if h.qoq_delta > 0 %}text-emerald-300{% elif h.qoq_delta < 0 %}text-rose-300{% else %}text-slate-400{% endif %}">
+        {{ ("%+.2f"|format(h.qoq_delta)).replace(".", ",") }}%
     </td>
+</tr>
+{% else %}
+<tr>
+    <td colspan="6" class="px-4 py-10 text-center text-slate-400">Inga träffar hittades.</td>
 </tr>
 {% endfor %}

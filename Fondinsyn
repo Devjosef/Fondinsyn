@@ -1,0 +1,16 @@
+#!/bin/sh
+set -eu
+
+PROJECT_ROOT=$(CDPATH= cd -- "$(dirname -- "$0")" && pwd)
+
+if [ -x "$PROJECT_ROOT/.venv/bin/python" ]; then
+    PYTHON="$PROJECT_ROOT/.venv/bin/python"
+elif [ -x "$PROJECT_ROOT/venv/bin/python" ]; then
+    PYTHON="$PROJECT_ROOT/venv/bin/python"
+else
+    printf '%s\n' "Python environment not found. Create .venv and install requirements.txt first." >&2
+    exit 1
+fi
+
+cd "$PROJECT_ROOT"
+exec "$PYTHON" -m app.dashboard_main "$@"

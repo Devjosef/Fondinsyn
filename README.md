@@ -49,7 +49,7 @@ Requirements: Python 3.10+, PostgreSQL 15+, and (for Docker execution) Docker.
 python3 -m venv .venv
 source .venv/bin/activate
 python -m pip install -r requirements.txt
-python -m app.dashboard_main
+./Fondinsyn
 ```
 
 Open [http://localhost:8000](http://localhost:8000). If `DATABASE_URL` is unset or PostgreSQL is unavailable, the interface falls back to mock data for local UI testing.
@@ -60,7 +60,7 @@ Run the layout and comparison checks with:
 python -m pytest -q
 ```
 
-To run the ETL, configure the local, Git-ignored `config/config.yaml` and run:
+To run the ETL, set `DATABASE_URL` in the local, Git-ignored `.env` file. Keep any non-secret ETL settings in the local, Git-ignored `config/config.yaml`, then run:
 
 ```bash
 python -m app.run_pipeline

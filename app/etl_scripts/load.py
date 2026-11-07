@@ -1,20 +1,17 @@
 import logging
 import pandas as pd
-from sqlalchemy import create_engine
 from sqlalchemy.orm import sessionmaker, Session
 import yaml
 from pathlib import Path
 from tenacity import retry, stop_after_attempt, wait_exponential, retry_if_exception_type
 from sqlalchemy.exc import OperationalError, ProgrammingError
+from app.database.connection import create_database_engine
 from app.database.models import Fund, Sector, FundSectorAllocation, ETLLog
 
 logger = logging.getLogger(__name__)
 
 def build_engine(config: dict):
-    db_config = config['database']
-    db_conn_str = (f"postgresql://CREDENTIAL_REMOVED_9bcf166e240683cd1b72a7f9d05b8274@"
-                   f"{db_config['host']}:{db_config['port']}/{db_config['db_name']}")
-    return create_engine(db_conn_str, pool_pre_ping=True)
+    return create_database_engine(pool_pre_ping=True)
 
 def get_or_create_fund(session: Session, fund_name: str) -> int:
     fund = session.query(Fund).filter(Fund.name == fund_name).first()

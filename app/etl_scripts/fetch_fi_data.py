@@ -12,7 +12,8 @@ from urllib.parse import parse_qs, urljoin, urlsplit
 import requests
 import yaml
 from lxml import html as lxml_html
-from sqlalchemy import create_engine, text
+from sqlalchemy import text
+from app.database.connection import create_database_engine
 from tenacity import retry, stop_after_attempt, wait_exponential, retry_if_exception_type
 from sqlalchemy.exc import OperationalError, IntegrityError
 
@@ -57,12 +58,7 @@ def archive_filename(file_url: str) -> Optional[str]:
 
 
 def build_engine(config: dict):
-    db_config = config['database']
-    db_conn_str = (
-        f"postgresql://CREDENTIAL_REMOVED_9bcf166e240683cd1b72a7f9d05b8274@"
-        f"{db_config['host']}:{db_config['port']}/{db_config['db_name']}"
-    )
-    return create_engine(db_conn_str, pool_pre_ping=True, echo=False)
+    return create_database_engine(pool_pre_ping=True, echo=False)
 
 
 @retry(

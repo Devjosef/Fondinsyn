@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Fondinsyn — Quarterly Swedish Fund-Holdings Explorer</title>
+    <title>Fondinsyn — kvartalsvisa fondinnehav</title>
     
     <script src="https://cdn.tailwindcss.com"></script>
     <script>
@@ -31,31 +31,13 @@
     
     <style>
         body {
-            background-color: #0B101D;
+            background-color: #0b1120;
             color: #F8FAFC;
-            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
-            background-image: 
-                radial-gradient(rgba(56, 189, 248, 0.25) 1.5px, transparent 1.5px),
-                linear-gradient(to right, rgba(56, 189, 248, 0.04) 1px, transparent 1px),
-                linear-gradient(to bottom, rgba(56, 189, 248, 0.04) 1px, transparent 1px);
-            background-size: 32px 32px, 128px 128px, 128px 128px;
-            background-position: 0 0, 0 0, 0 0;
-            position: relative;
-        }
-
-        body::after {
-            content: 'Y ↑\A  │\A  └─→ X';
-            white-space: pre;
-            position: fixed;
-            bottom: 24px;
-            right: 24px;
-            font-family: 'JetBrains Mono', monospace;
-            font-size: 10px;
-            color: rgba(56, 189, 248, 0.3);
-            pointer-events: none;
-            line-height: 1.2;
-            letter-spacing: 0.1em;
-            z-index: 0;
+            font-family: Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+            line-height: 1.55;
+            background-image: radial-gradient(ellipse at 50% -24rem, rgba(14, 116, 144, 0.2), transparent 70%);
+            font-kerning: normal;
+            text-rendering: optimizeLegibility;
         }
 
         body::before {
@@ -73,48 +55,60 @@
 
         .mono-number {
             font-family: 'JetBrains Mono', 'Fira Code', monospace;
-            letter-spacing: -0.02em;
+            font-variant-numeric: tabular-nums;
         }
 
         .terminal-card {
-            background: linear-gradient(145deg, rgba(22, 30, 46, 0.85) 0%, rgba(14, 20, 34, 0.95) 100%);
-            border: 1px solid rgba(56, 189, 248, 0.3);
-            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.6), inset 0 1px 0 rgba(255, 255, 255, 0.08);
-            backdrop-filter: blur(12px);
-            border-radius: 0.5rem;
-            position: relative;
-            overflow: hidden;
-        }
-
-        .terminal-card::after {
-            content: '';
-            position: absolute;
-            top: 0; left: 0; right: 0;
-            height: 1px;
-            background: linear-gradient(90deg, transparent, rgba(56, 189, 248, 0.8), transparent);
+            background: linear-gradient(145deg, rgba(20, 30, 47, 0.96), rgba(15, 23, 42, 0.98));
+            border: 1px solid rgba(148, 163, 184, 0.2);
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.2);
+            border-radius: 0.75rem;
+            min-width: 0;
+            transition: border-color 0.18s ease, background-color 0.18s ease;
         }
 
         .terminal-card:hover {
-            border-color: rgba(56, 189, 248, 0.6);
-            box-shadow: 0 12px 35px rgba(0, 0, 0, 0.7), 0 0 20px rgba(56, 189, 248, 0.15);
+            border-color: rgba(56, 189, 248, 0.42);
         }
 
         .terminal-table-container {
-            background: rgba(14, 20, 34, 0.85);
-            border: 1px solid rgba(56, 189, 248, 0.3);
-            border-radius: 0.5rem;
-            backdrop-filter: blur(12px);
-            box-shadow: 0 12px 30px rgba(0, 0, 0, 0.6);
+            background: rgba(15, 23, 42, 0.88);
+            border: 1px solid rgba(148, 163, 184, 0.2);
+            border-radius: 0.75rem;
+            box-shadow: 0 14px 36px rgba(0, 0, 0, 0.2);
             overflow: hidden;
         }
 
         #table-body tr {
-            transition: background-color 0.15s ease;
+            transition: background-color 0.16s ease;
         }
-        
-        .htmx-swapping tr {
+
+        #table-body tr:hover {
+            background-color: rgba(51, 65, 85, 0.5);
+        }
+
+        .htmx-indicator {
             opacity: 0;
-            transform: translateY(4px);
+            visibility: hidden;
+            transition: opacity 0.15s ease;
+        }
+
+        .htmx-request .htmx-indicator,
+        .htmx-request.htmx-indicator {
+            opacity: 1;
+            visibility: visible;
+        }
+
+        .measure {
+            max-width: 68ch;
+        }
+
+        @media (prefers-reduced-motion: reduce) {
+            *, *::before, *::after {
+                scroll-behavior: auto !important;
+                animation-duration: 0.01ms !important;
+                transition-duration: 0.01ms !important;
+            }
         }
 
         ::-webkit-scrollbar { width: 6px; height: 6px; }
@@ -125,110 +119,88 @@
 </head>
 <body class="min-h-screen flex flex-col antialiased selection:bg-sky-500 selection:text-white relative z-10">
 
-    <header class="border-b border-sky-500/20 bg-slate-950/80 backdrop-blur-md sticky top-0 z-50">
-        <div class="max-w-7xl mx-auto px-4 h-12 flex items-center justify-between text-xs font-mono text-slate-300">
-            <div class="flex items-center space-x-6">
-                <div class="flex items-center space-x-2">
-                    <span class="text-white font-bold tracking-wider">Fondinsyn</span>
-                </div>
-                <a href="/datastatus" class="text-sky-300 transition hover:text-white">Datastatus</a>
-                <a href="/compare" class="text-sky-300 transition hover:text-white">Jämför kvartal</a>
-                <div class="hidden sm:flex items-center space-x-2 text-slate-500">
-                    <span>/</span>
-                    <span class="text-slate-400">Databas:</span>
-                    <span class="text-emerald-400 font-medium">{{ diagnostics.postgresql }}</span>
-                </div>
-                <div class="hidden md:flex items-center space-x-2 text-slate-500">
-                    <span>/</span>
-                    <span class="text-sky-400 font-medium">Kvartalsdata</span>
-                </div>
-            </div>
-            
-            <div class="flex items-center space-x-4">
-                <div class="text-slate-300">
-                    {% if snapshot.quarter_id %}
-                    Senaste tillgängliga kvartal: <span class="text-white font-medium">{{ snapshot.quarter_id }}</span>
-                    {% else %}
-                    Senaste tillgängliga kvartal: Ej tillgängligt
-                    {% endif %}
-                </div>
-            </div>
+    <header class="sticky top-0 z-50 border-b border-slate-700/80 bg-slate-950/90 backdrop-blur-md">
+        <div class="mx-auto flex max-w-7xl flex-wrap items-center justify-between gap-x-8 gap-y-3 px-4 py-3">
+            <a href="/" aria-label="Fondinsyn, startsida" class="text-lg font-semibold tracking-tight text-white">Fondinsyn</a>
+            <nav aria-label="Huvudnavigation" class="flex flex-wrap items-center gap-x-4 gap-y-2 text-sm sm:gap-x-5">
+                <a href="/datastatus" class="whitespace-nowrap text-slate-300 transition hover:text-white">Datastatus</a>
+                <a href="/compare" class="whitespace-nowrap text-slate-300 transition hover:text-white"><span class="sm:hidden">Jämför</span><span class="hidden sm:inline">Jämför kvartal</span></a>
+            </nav>
         </div>
     </header>
 
     <main class="flex-1 px-4 py-10 max-w-7xl mx-auto w-full space-y-8">
         
-        <div class="flex flex-col md:flex-row md:items-end justify-between gap-4 border-b border-sky-500/20 pb-6">
+        <div class="flex flex-col gap-5 border-b border-slate-700/80 pb-7 xl:flex-row xl:items-end xl:justify-between">
             <div>
-                <div class="flex items-center space-x-2 text-sky-400 text-xs font-mono mb-2 uppercase tracking-widest font-semibold">
+                <div class="mb-3 flex flex-wrap items-center gap-2 text-sm font-medium text-sky-200">
                     <span class="inline-block w-2 h-2 rounded-full bg-sky-400 shadow-[0_0_8px_#38BDF8]"></span>
-                    <span>Offentliga data från Finansinspektionen</span>
-                    <span class="text-slate-600">•</span>
+                    <span>Offentlig data från Finansinspektionen</span>
+                    <span class="text-slate-500" aria-hidden="true">·</span>
                     <span>Kvartalsvis</span>
                 </div>
-                <h1 class="text-3xl font-extrabold tracking-tight text-white font-mono flex items-center gap-3">
+                <h1 class="flex items-center gap-3 text-3xl font-extrabold tracking-tight text-white">
                     Fondinsyn
-                    <span class="text-xs font-mono font-medium px-2.5 py-0.5 rounded bg-sky-500/20 border border-sky-400/40 text-sky-300">Kvartalsvis fondinnehav</span>
+                    <span class="rounded-md border border-sky-400/30 bg-sky-500/10 px-3 py-1 text-sm font-medium text-sky-200 sm:whitespace-nowrap">Kvartalsvisa fondinnehav</span>
                 </h1>
             </div>
             
-            <div class="flex items-center space-x-3 text-xs font-mono text-slate-300 bg-slate-900/80 border border-sky-500/30 px-3.5 py-1.5 rounded-md backdrop-blur-sm shadow-lg">
-                <span>Poster: <strong class="text-white mono-number">{{ diagnostics.record_count }}</strong></span>
-                <span class="text-slate-600">•</span>
-                <span>Senaste ETL-körning: <strong class="text-white">{{ diagnostics.last_update }}</strong></span>
+            <div class="flex flex-wrap items-center gap-x-4 gap-y-2 rounded-lg border border-slate-700 bg-slate-900/80 px-4 py-3 text-sm text-slate-300">
+                <span class="inline-flex items-center gap-2">
+                    <span class="h-2 w-2 rounded-full {% if diagnostics.postgresql == 'UP' %}bg-emerald-400{% elif diagnostics.postgresql == 'DEGRADED' %}bg-amber-400{% else %}bg-rose-400{% endif %}"></span>
+                    Databas:
+                    {% if diagnostics.postgresql == "UP" %}
+                    <strong class="font-medium text-emerald-200">Tillgänglig</strong>
+                    {% elif diagnostics.postgresql == "DEGRADED" %}
+                    <strong class="font-medium text-amber-200">Begränsad åtkomst</strong>
+                    {% else %}
+                    <strong class="font-medium text-rose-200">Ej tillgänglig</strong>
+                    {% endif %}
+                </span>
+                <span class="text-slate-600" aria-hidden="true">·</span>
+                <span>Positioner: <strong class="mono-number text-white">{{ "{:,}".format(diagnostics.record_count).replace(",", " ") }}</strong></span>
+                <span class="text-slate-600" aria-hidden="true">·</span>
+                <span>Senaste tillgängliga kvartal: <strong class="mono-number text-white">{{ snapshot.quarter_id or "Ej tillgängligt" }}</strong></span>
+                <span class="text-slate-600" aria-hidden="true">·</span>
+                <span>Senaste inläsning: <strong class="mono-number text-white">{{ diagnostics.last_update }}</strong></span>
             </div>
         </div>
 
-        <div class="grid grid-cols-1 md:grid-cols-3 gap-5">
+        <div class="grid grid-cols-1 gap-5 md:grid-cols-2">
             
             <div class="terminal-card p-6">
-                <div class="text-slate-300 text-xs font-mono tracking-wider uppercase mb-2 flex items-center justify-between font-medium">
-                    <span>Totalt förvaltat kapital</span>
-                    <span class="text-sky-400 font-mono text-[10px] font-bold">// SEK</span>
+                <div class="mb-3 flex items-center justify-between gap-4 text-sm font-medium text-slate-300">
+                    <span>Rapporterat marknadsvärde</span>
+                    <span class="text-sky-300 font-mono text-[10px] font-bold">SEK</span>
                 </div>
                 <div class="text-3xl font-bold text-white mono-number tracking-tight">
-                    {{ "%.2f"|format(kpis.total_aum_sek / 1_000_000) }}<span class="text-sky-400 text-base font-normal ml-1">M</span>
+                    {{ "{:,.2f}".format(kpis.total_aum_sek / 1_000_000).replace(",", " ").replace(".", ",") }}<span class="ml-1 text-base font-normal text-sky-300">mn</span>
                 </div>
-                <div class="mt-3 text-[11px] text-slate-400 font-mono flex items-center gap-1.5">
+                <div class="measure mt-4 flex items-start gap-2 text-sm leading-6 text-slate-400">
                     <span class="w-1.5 h-1.5 rounded-full bg-sky-400"></span>
-                    Summerat för fonderna i den senaste rapporterade kvartalsperioden
+                    Summerat marknadsvärde för rapporterade positioner i senaste kvartalet
                 </div>
             </div>
             
             <div class="terminal-card p-6">
-                <div class="text-slate-300 text-xs font-mono tracking-wider uppercase mb-2 flex items-center justify-between font-medium">
+                <div class="mb-3 flex items-center justify-between gap-4 text-sm font-medium text-slate-300">
                     <span>Antal fonder</span>
-                    <span class="text-sky-400 font-mono text-[10px] font-bold">// ENTITIES</span>
+                    <span class="text-sky-300 font-mono text-[10px] font-bold">SENASTE KVARTALET</span>
                 </div>
                 <div class="text-3xl font-bold text-white mono-number tracking-tight">
                     {{ kpis.active_funds }}
                 </div>
-                <div class="mt-3 text-[11px] text-slate-400 font-mono flex items-center gap-1.5">
+                <div class="measure mt-4 flex items-start gap-2 text-sm leading-6 text-slate-400">
                     <span class="w-1.5 h-1.5 rounded-full bg-sky-400"></span>
-                    Fonder med innehav i den senaste rapporterade kvartalsperioden
+                    Fonder med rapporterade innehav i det senaste kvartalet
                 </div>
             </div>
-            
-            <div class="terminal-card p-6">
-                <div class="text-slate-300 text-xs font-mono tracking-wider uppercase mb-2 flex items-center justify-between font-medium">
-                    <span>Datakvalitet</span>
-                    <span class="text-emerald-400 font-mono text-[10px] font-bold">// KONTROLLERAD</span>
-                </div>
-                <div class="text-3xl font-bold text-emerald-400 mono-number tracking-tight">
-                    {{ "%.1f"|format(kpis.data_quality_score) }}%
-                </div>
-                <div class="mt-3 text-[11px] text-slate-400 font-mono flex items-center gap-1.5">
-                    <span class="w-1.5 h-1.5 rounded-full bg-emerald-400"></span>
-                    Kvalitetsmått från databehandlingen
-                </div>
-            </div>
-            
         </div>
         
         <div class="terminal-table-container">
             <section class="border-b border-sky-500/20 bg-slate-950/70 px-5 py-4" aria-labelledby="holdings-heading">
                 <h2 id="holdings-heading" class="text-lg font-semibold text-white">Innehav — kvartalsvis ögonblicksbild</h2>
-                <p class="mt-1 text-xs text-slate-400">Kvartalsslut: 31 mars, 30 juni, 30 september eller 31 december. Publiceringsdatum hämtas från FI:s källfil när det finns registrerat.</p>
+                <p class="measure mt-1 text-sm text-slate-400">Innehaven avser kvartalets sista dag. FI publicerar uppgifterna i efterhand; publiceringsdatum visas när det kan utläsas ur källfilen.</p>
                 <div class="mt-2 flex flex-wrap gap-x-6 gap-y-2 text-sm text-slate-300">
                     <span>Kvartal: <strong class="mono-number text-white">{{ snapshot.quarter_id or "Ej tillgängligt" }}</strong></span>
                     <span>Rapporterat datum:
@@ -252,7 +224,7 @@
                     <span>Valuta: <strong class="text-white">SEK</strong></span>
                 </div>
                 {% if snapshot.quarter_end_date %}
-                <p class="mt-2 text-sm font-medium text-sky-200">Innehav per {{ snapshot.quarter_end_date.strftime("%Y-%m-%d") }}</p>
+                <p class="mt-3 text-base font-semibold text-sky-100">Innehav per {{ snapshot.quarter_end_date.strftime("%Y-%m-%d") }}</p>
                 {% else %}
                 <p class="mt-2 text-sm text-slate-300">Inget verifierat kvartalsslut finns tillgängligt för innehaven.</p>
                 {% endif %}
@@ -260,11 +232,14 @@
                 <p class="mt-1 text-xs text-slate-400">Källfil: {{ snapshot.source_file_name }} — publiceringsdatum enligt FI:s filnamn.</p>
                 {% endif %}
                 <div class="mt-3 rounded border border-sky-500/20 bg-slate-950/50 p-3 text-xs leading-5 text-slate-300">
-                    <p>
-                        Källa: {{ snapshot.source_file_name or "Ej registrerad" }}
-                        | Publicerad: {{ snapshot.publication_date.strftime("%Y-%m-%d %H:%M") if snapshot.publication_date else "Ej registrerat" }}
-                        | Hämtad: {{ snapshot.download_timestamp.strftime("%Y-%m-%d %H:%M:%S") if snapshot.download_timestamp else "Hämtningstid registreras inte" }}
-                        | Inläst: {{ snapshot.ingestion_timestamp.strftime("%Y-%m-%d %H:%M:%S") if snapshot.ingestion_timestamp else "PostgreSQL-upsertens tid registreras inte" }}
+                    <p class="measure">
+                        Källfil: {{ snapshot.source_file_name or "Inte registrerad" }}
+                        <span class="mx-1 text-slate-500">·</span>
+                        Publicerad: {{ snapshot.publication_date.strftime("%Y-%m-%d %H:%M") if snapshot.publication_date else "Ej angivet" }}
+                        <span class="mx-1 text-slate-500">·</span>
+                        Hämtad: {{ snapshot.download_timestamp.strftime("%Y-%m-%d %H:%M:%S") if snapshot.download_timestamp else "Tidpunkt ej registrerad" }}
+                        <span class="mx-1 text-slate-500">·</span>
+                        Inläst: {{ snapshot.ingestion_timestamp.strftime("%Y-%m-%d %H:%M:%S") if snapshot.ingestion_timestamp else "Tidpunkt ej registrerad" }}
                     </p>
                     <p class="mt-1">Kvartal: {{ snapshot.quarter_id or "Ej registrerat" }}</p>
                 </div>
@@ -275,13 +250,13 @@
                     <a class="text-sky-300 underline underline-offset-2 hover:text-white"
                        href="{{ snapshot.source_url }}" target="_blank" rel="noopener noreferrer">FI:s källfil</a>
                     {% endif %}
-                    <span class="text-slate-300">Informationen avser kvartalsvisa innehav och är inte sanntidsdata.</span>
+                    <span class="measure text-slate-300">Uppgifterna visar rapporterade kvartalsinnehav, inte aktuella innehav.</span>
                 </div>
                 {% if diagnostics.quarter_end_date and not snapshot.is_calendar_quarter_end %}
                 <p role="status" class="mt-2 text-sm text-amber-200">Rapporterat datum stämmer inte med ett kalenderkvartalsslut enligt FI:s kvartalsindelning.</p>
                 {% endif %}
                 <p class="mt-3 text-xs leading-5 text-slate-400">
-                    Inläsningen är idempotent med stabila identifierare: kvartal, fond-ID och instrument-ID/ISIN.
+                    Inläsningen använder stabila identifierare: kvartal, fond-ID och instrument-ID/ISIN.
                     En separat intern VP-kod visas inte i denna vy. Poster utan ISIN filtreras bort före upsert;
                     FI:s råkällfil ändras inte.
                 </p>
@@ -294,19 +269,21 @@
                     </span>
                     <input
                         type="text"
-                        class="w-full bg-slate-950 border border-sky-500/30 rounded-lg pl-8 pr-4 py-2.5 text-sm text-white placeholder-slate-400 font-mono focus:outline-none focus:border-sky-400 focus:ring-2 focus:ring-sky-400/20 transition-all shadow-inner"
-                        placeholder="Sök på ISIN, fondnamn eller värdepapper..."
+                        aria-label="Sök bland fonder och innehav"
+                        class="w-full bg-slate-950 border border-slate-600 rounded-lg pl-8 pr-4 py-3 text-sm text-white placeholder-slate-400 focus:outline-none focus:border-sky-400 focus:ring-2 focus:ring-sky-400/20 transition-all"
+                        placeholder="Sök efter fond, värdepapper eller ISIN"
                         name="search"
                         hx-get="/api/search"
                         hx-trigger="keyup changed delay:200ms"
+                        hx-indicator="#search-indicator"
                         hx-target="#table-body"
                         hx-select="tbody tr"
                         autocomplete="off"
                     />
                 </div>
-                <div class="htmx-indicator flex items-center space-x-2 text-xs font-mono text-sky-300 whitespace-nowrap bg-sky-950/60 px-3 py-1.5 rounded border border-sky-500/40 shadow">
+                <div id="search-indicator" class="htmx-indicator flex items-center space-x-2 text-sm text-sky-200 whitespace-nowrap" role="status" aria-live="polite">
                     <div class="w-2 h-2 rounded-full bg-sky-400 animate-ping"></div>
-                    <span>Söker i kvartalsdata...</span>
+                    <span>Söker…</span>
                 </div>
             </div>
             
@@ -314,12 +291,12 @@
                 <table class="w-full text-left border-collapse">
                     <thead>
                         <tr class="border-b border-sky-500/20 text-[11px] font-mono tracking-wider text-slate-300 bg-slate-950/80 font-semibold">
-                            <th class="py-3 px-4 font-medium text-left">ISIN / FI-instrumentkod</th>
-                            <th class="py-3 px-4 font-medium text-left">Fond</th>
-                            <th class="py-3 px-4 font-medium text-left">Innehav</th>
-                            <th class="py-3 px-4 font-medium text-right">Marknadsvärde (SEK)</th>
-                            <th class="py-3 px-4 font-medium text-right">Andel av fondförmögenhet</th>
-                            <th class="py-3 px-4 font-medium text-right">Ändring sedan föregående kvartal</th>
+                            <th scope="col" class="px-4 py-4 text-left font-medium">ISIN</th>
+                            <th scope="col" class="px-4 py-4 text-left font-medium">Fond</th>
+                            <th scope="col" class="px-4 py-4 text-left font-medium">Innehav</th>
+                            <th scope="col" class="px-4 py-4 text-right font-medium">Marknadsvärde (SEK)</th>
+                            <th scope="col" class="px-4 py-4 text-right font-medium">Andel av fondförmögenheten</th>
+                            <th scope="col" class="px-4 py-4 text-right font-medium">Förändring sedan föregående kvartal</th>
                         </tr>
                     </thead>
                     <tbody id="table-body" class="divide-y divide-sky-500/10 text-sm">

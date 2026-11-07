@@ -8,7 +8,8 @@ from pathlib import Path
 from typing import Dict, List, Optional, Tuple
 
 import yaml
-from sqlalchemy import create_engine, text
+from sqlalchemy import text
+from app.database.connection import create_database_engine
 
 from app.docker_manager import DockerOrchestrator
 from app.etl_scripts.extract import extract_data
@@ -91,12 +92,7 @@ class PipelineMetrics:
 
 @contextmanager
 def db_engine(config: dict):
-    db = config['database']
-    engine = create_engine(
-        f"postgresql://CREDENTIAL_REMOVED_9bcf166e240683cd1b72a7f9d05b8274@{db['host']}:{db['port']}/{db['db_name']}",
-        pool_pre_ping=True,
-        echo=False,
-    )
+    engine = create_database_engine(pool_pre_ping=True, echo=False)
     try:
         yield engine
     finally:

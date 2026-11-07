@@ -269,16 +269,16 @@ def get_ingestion_status() -> Dict[str, Any]:
         status_labels = {
             "PENDING": ("Väntar", "pending"),
             "IN_PROGRESS": ("Pågår", "processing"),
-            "COMPLETED": ("Källfil hämtad och extraherad", "available"),
+            "COMPLETED": ("Tillgänglig", "available"),
             "FAILED": ("Misslyckad", "failed"),
-            "SKIPPED": ("Överhoppad", "pending"),
+            "SKIPPED": ("Överhoppad", "skipped"),
         }
 
         for row in rows:
             quarter_id = row["quarter_id"]
             state = str(row["lifecycle_state"]).upper()
             status_label, status_class = status_labels.get(
-                state, ("Okänd", "pending")
+                state, ("Okänd status", "pending")
             )
             local_path = row["local_path"]
             source_file_name = (

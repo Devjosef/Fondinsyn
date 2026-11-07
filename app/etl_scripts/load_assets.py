@@ -1,18 +1,15 @@
 import logging
 import pandas as pd
 from sqlalchemy.orm import sessionmaker
-from sqlalchemy import create_engine
 import yaml
 from pathlib import Path
+from app.database.connection import create_database_engine
 from app.database.models import Asset, Sector
 
 logger = logging.getLogger(__name__)
 
 def build_engine(config: dict):
-    db_config = config['database']
-    db_conn_str = (f"postgresql://CREDENTIAL_REMOVED_9bcf166e240683cd1b72a7f9d05b8274@"
-                   f"{db_config['host']}:{db_config['port']}/{db_config['db_name']}")
-    return create_engine(db_conn_str, pool_pre_ping=True)
+    return create_database_engine(pool_pre_ping=True)
 
 def load_assets_from_csv(csv_path: str, config: dict) -> int:
     engine = build_engine(config)

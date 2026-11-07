@@ -54,6 +54,12 @@ python -m app.dashboard_main
 
 Open [http://localhost:8000](http://localhost:8000). If `DATABASE_URL` is unset or PostgreSQL is unavailable, the interface falls back to mock data for local UI testing.
 
+Run the layout and comparison checks with:
+
+```bash
+python -m pytest -q
+```
+
 To run the ETL, configure the local, Git-ignored `config/config.yaml` and run:
 
 ```bash

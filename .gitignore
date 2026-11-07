@@ -1,10 +1,13 @@
 # Environment & Configuration
 .env
+.env.*
+!.env.example
 /config/
 /venv/
 .venv/
 __pycache__/
-*.pyc
+*.py[cod]
+.pytest_cache/
 
 # Data Files & Datasets (1.35GB+)
 *.csv
@@ -23,11 +26,15 @@ Fondinnehav_*/
 
 # Logs & Diagnostics
 *.log
-*.log
 logs/
-logs/*
 
 # System & IDE Files
 .DS_Store
 .vscode/
 .idea/
+
+# Local databases and test artifacts
+*.db
+*.sqlite
+*.sqlite3
+*.db-*
